@@ -1,9 +1,13 @@
 import { useParams, Link } from "react-router-dom"
-import { products } from "../data/product"
+import { useProducts } from "../hooks/useProducts"
+import { useState } from "react"
 
-export const ProductDetails = ({ addToCart }) => {
+
+export const ProductDetails = ({ addToCart, removeFromCart, cartItems }) => {
   const { productId } = useParams()
+  const { products } = useProducts('https://dummyjson.com/products')
   const product = products.find((product) => product.id === Number(productId))
+  const [imgIndex, setImgIndex] = useState(0)
 
   if (!product) {
     return (
@@ -13,6 +17,10 @@ export const ProductDetails = ({ addToCart }) => {
       </main>
     )
   }
+
+  const images = product.images || []
+  const prevImg = () => setImgIndex((i) => (i === 0 ? images.length - 1 : i - 1))
+  const nextImg = () => setImgIndex((i) => (i === images.length - 1 ? 0 : i + 1))
 
   return (
     <main className="container py-5">
@@ -25,13 +33,37 @@ export const ProductDetails = ({ addToCart }) => {
 
       <div className="row g-5 align-items-start">
         <div className="col-12 col-lg-6">
-          <div className="ratio ratio-4x3 product-hero rounded-4 overflow-hidden">
-            <img src={product.image} alt={product.title} className="w-100 h-100 object-cover product-hero-img" />
+          <div className="product-hero rounded-4 overflow-hidden">
+            <div className="image-slider">
+              <div className="image-slider-main">
+                <img src={images[imgIndex] || product.thumbnail} alt={product.title} className="image-slider-img" />
+                {images.length > 1 && (
+                  <>
+                    <button className="slider-btn slider-btn-prev" onClick={prevImg} aria-label="Previous image">‹</button>
+                    <button className="slider-btn slider-btn-next" onClick={nextImg} aria-label="Next image">›</button>
+                  </>
+                )}
+              </div>
+              {images.length > 1 && (
+                <div className="image-slider-thumbs">
+                  {images.map((img, i) => (
+                    <button
+                      key={i}
+                      className={`image-slider-thumb ${i === imgIndex ? 'active' : ''}`}
+                      onClick={() => setImgIndex(i)}
+                      aria-label={`View image ${i + 1}`}
+                    >
+                      <img src={img} alt="" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="d-flex gap-2 mt-3">
-            <div className="small product-detail-ship">Secure checkout</div>
-            <div className="small product-detail-ship">Free returns</div>
-            <div className="small product-detail-ship">2 year warranty</div>
+            <div className="small product-detail-ship">🔒 Secure checkout</div>
+            <div className="small product-detail-ship">↩ Free returns</div>
+            <div className="small product-detail-ship">🛡 2 year warranty</div>
           </div>
         </div>
 
@@ -45,48 +77,51 @@ export const ProductDetails = ({ addToCart }) => {
           <div className="d-flex align-items-center gap-3 mb-3">
             <div className="pd-rating d-flex align-items-center gap-2">
               <div className="text-warning">★★★★★</div>
-              <div className="small" style={{color: 'var(--muted)'}}>4.8 • 1.2k reviews</div>
+              <div className="small text-muted">4.8 • 1.2k reviews</div>
             </div>
-            <div className="small" style={{color: 'var(--muted)'}}>|</div>
-            <div className="small" style={{color: 'var(--muted)'}}>Ships in 1-2 days</div>
+            <div className="small text-muted">|</div>
+            <div className="small text-muted">Ships in 1-2 days</div>
           </div>
 
-          <p className="mb-4" style={{color: 'var(--muted)', lineHeight: 1.7}}>{product.description}</p>
+          <p className="mb-4 text-muted" style={{lineHeight: 1.7}}>{product.description}</p>
 
           <div className="d-flex align-items-end justify-content-between gap-3 mb-4">
             <div>
               <div className="h2 mb-0 pd-price">${product.price}</div>
-              <div className="small" style={{color: 'var(--muted)'}}>Inclusive of taxes</div>
+              <div className="small text-muted">Inclusive of taxes</div>
             </div>
 
             <div className="text-end">
-              <div className="small fw-semibold animate-pulse-glow" style={{color: 'var(--burgundy)', padding: '0.25rem 0.75rem', borderRadius: 999, background: 'rgba(129,11,56,0.04)'}}>In stock</div>
-              <div className="small" style={{color: 'var(--muted)'}}>Only a few left</div>
+              <div className="in-stock-badge">In stock<span className="stock-qty">— only a few left</span></div>
             </div>
           </div>
 
           <div className="d-flex gap-3 mb-3 flex-column flex-sm-row">
-            <button className="btn btn-primary btn-lg rounded-pill pd-cta py-3" onClick={() => addToCart(product)}>Add to cart</button>
+            { cartItems.some((item) => item.id === product.id) ? 
+              <button className="btn btn-primary btn-sm px-4 py-2" onClick={() => removeFromCart(product.id)}>Remove from cart</button>
+            :
+              <button className="btn btn-primary btn-sm px-4 py-2" onClick={() => addToCart(product)}>Add to cart</button>}
+
           </div>
 
           <div className="d-flex gap-3 align-items-center mt-3 flex-wrap">
-            <div className="small" style={{color: 'var(--muted)'}}>Ships from USA</div>
-            <div className="small" style={{color: 'var(--muted)'}}>•</div>
-            <div className="small" style={{color: 'var(--muted)'}}>Free shipping over $50</div>
-            <div className="small" style={{color: 'var(--muted)'}}>•</div>
-            <div className="small" style={{color: 'var(--muted)'}}>30-day returns</div>
+            <div className="small text-muted">Ships from USA</div>
+            <div className="small text-muted">•</div>
+            <div className="small text-muted">Free shipping over $50</div>
+            <div className="small text-muted">•</div>
+            <div className="small text-muted">30-day returns</div>
           </div>
 
           <hr className="my-4" />
 
           <div className="d-flex gap-4 flex-wrap">
             <div className="d-flex align-items-center gap-2">
-              <div className="fw-semibold" style={{color: 'var(--text)'}}>Payment:</div>
-              <div className="small" style={{color: 'var(--muted)'}}>Visa / Mastercard / PayPal</div>
+              <div className="fw-semibold text-white">Payment:</div>
+              <div className="small text-muted">Visa / Mastercard / PayPal</div>
             </div>
             <div className="d-flex align-items-center gap-2">
-              <div className="fw-semibold" style={{color: 'var(--text)'}}>Warranty:</div>
-              <div className="small" style={{color: 'var(--muted)'}}>2 years included</div>
+              <div className="fw-semibold text-white">Warranty:</div>
+              <div className="small text-muted">2 years included</div>
             </div>
           </div>
         </div>
