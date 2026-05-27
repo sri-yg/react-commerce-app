@@ -1,7 +1,11 @@
 import { Link } from "react-router-dom"
 import logo from "../assets/logo.png"
+import { useCart } from "../context/CartContext"
 
 export const Navbar = () => {
+    const { cartItems } = useCart()
+    const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+
     return (
         <nav className="navbar navbar-expand-lg sticky-top py-3">
             <div className="container">
@@ -20,8 +24,13 @@ export const Navbar = () => {
                             <Link to="/" className="nav-link px-3" aria-current="page">Home</Link>
                         </li>
                         <li className="nav-item">
-                            <Link to="/cart" className="nav-link px-3 nav-link-cart">
+                            <Link to="/cart" className="nav-link px-3 nav-link-cart position-relative">
                                 <span className="cart-icon-bounce">🛒</span> Cart
+                                {itemCount > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style={{fontSize: '0.65rem', transform: 'translate(-50%, -50%) !important'}}>
+                                        {itemCount}
+                                    </span>
+                                )}
                             </Link>
                         </li>
                     </ul>

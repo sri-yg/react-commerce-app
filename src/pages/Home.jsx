@@ -1,13 +1,66 @@
 import { ProductCard } from "../components/ProductCard";
-import { useState } from "react";
+import { Skeleton } from "../components/Skeleton";
+import { useState, useEffect } from "react";
 import { useProducts } from "../hooks/useProducts"
+import { fetchCategories } from "../services/productService"
 
-export const Home = ({ addToCart, cartItems, removeFromCart }) => {
+const LIMIT = 12
+
+export const Home = () => {
   const [searchQuery, setSearchQuery] = useState('')
-  const searchTerm = (e) => {
-    setSearchQuery(e.target.value)
+  const [page, setPage] = useState(1)
+  const [category, setCategory] = useState('')
+  const [categories, setCategories] = useState([])
+
+  useEffect(() => {
+    fetchCategories().then(setCategories).catch(() => {})
+  }, [])
+
+  const categoryPath = category ? `/category/${category}` : ''
+  const skip = (page - 1) * LIMIT
+  const { products, total, loading, error } = useProducts(
+    `https://dummyjson.com/products${categoryPath}?limit=${LIMIT}&skip=${skip}`
+  )
+
+  const handleCategoryChange = (slug) => {
+    setCategory(slug)
+    setPage(1)
+    setSearchQuery('')
   }
-  const { products } = useProducts('https://dummyjson.com/products')
+
+  const totalPages = Math.ceil(total / LIMIT)
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value)
+    setPage(1)
+  }
+
+  const filtered = products.filter((p) =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const getPageNumbers = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
+    }
+    const pages = [1]
+    const start = Math.max(2, page - 1)
+    const end = Math.min(totalPages - 1, page + 1)
+    if (start > 2) pages.push('...')
+    for (let i = start; i <= end; i++) pages.push(i)
+    if (end < totalPages - 1) pages.push('...')
+    pages.push(totalPages)
+    return pages
+  }
+
+  if (error) {
+    return (
+      <main className="container py-5">
+        <Skeleton variant="error" title="Failed to load products" message={error} />
+      </main>
+    )
+  }
+
   return (
     <>
       <section className="hero-section">
@@ -46,10 +99,28 @@ export const Home = ({ addToCart, cartItems, removeFromCart }) => {
               className="search-input"
               placeholder="Search products..."
               value={searchQuery}
-              onChange={searchTerm}
+              onChange={handleSearch}
               aria-label="Search products"
             />
           </div>
+        </div>
+
+        <div className="category-filters">
+          <button
+            className={`category-btn${category === '' ? ' active' : ''}`}
+            onClick={() => handleCategoryChange('')}
+          >
+            All
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.slug}
+              className={`category-btn${category === cat.slug ? ' active' : ''}`}
+              onClick={() => handleCategoryChange(cat.slug)}
+            >
+              {cat.name}
+            </button>
+          ))}
         </div>
 
         <header className="section-header">
@@ -58,20 +129,59 @@ export const Home = ({ addToCart, cartItems, removeFromCart }) => {
             <p>Hand-picked items — premium quality</p>
           </div>
           <div className="d-none d-md-block">
-            <button className="btn btn-outline-primary btn-sm">View all</button>
+            <span className="text-muted small">
+              Page {page} of {totalPages || 1}
+            </span>
           </div>
         </header>
 
         <section>
-          <div className="row g-4">
-            {products && products.filter((product) => product.title.toLowerCase().includes(searchQuery.toLowerCase()))
-            .map((product, i) => (
-              <div key={product.id} className={`col-12 col-sm-6 col-md-4 col-lg-3 stagger-${(i % 6) + 1}`}>
-                <ProductCard product={product} addToCart={addToCart} cartItems={cartItems} removeFromCart={removeFromCart} />
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <Skeleton variant="card" count={LIMIT} />
+          ) : (
+            <div className="row g-4">
+              {filtered.map((product, i) => (
+                <div key={product.id} className={`col-12 col-sm-6 col-md-4 col-lg-3 stagger-${(i % 6) + 1}`}>
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
+
+        {totalPages > 1 && (
+          <nav className="pagination-nav" aria-label="Product pagination">
+            <button
+              className="pagination-btn"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              ← Prev
+            </button>
+            <div className="pagination-pages">
+              {getPageNumbers().map((p, i) =>
+                p === '...' ? (
+                  <span key={`e${i}`} className="pagination-ellipsis">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    className={`pagination-btn pagination-page${p === page ? ' active' : ''}`}
+                    onClick={() => setPage(p)}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+            </div>
+            <button
+              className="pagination-btn"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Next →
+            </button>
+          </nav>
+        )}
       </main>
     </>
   )

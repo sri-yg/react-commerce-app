@@ -1,13 +1,31 @@
 import { useParams, Link } from "react-router-dom"
-import { useProducts } from "../hooks/useProducts"
+import { useProduct } from "../hooks/useProduct"
+import { useCart } from "../context/CartContext"
+import { Skeleton } from "../components/Skeleton"
 import { useState } from "react"
 
 
-export const ProductDetails = ({ addToCart, removeFromCart, cartItems }) => {
+export const ProductDetails = () => {
+  const { cartItems, addToCart, removeFromCart } = useCart()
   const { productId } = useParams()
-  const { products } = useProducts('https://dummyjson.com/products')
-  const product = products.find((product) => product.id === Number(productId))
+  const { product, loading, error } = useProduct(productId)
   const [imgIndex, setImgIndex] = useState(0)
+
+  if (error) {
+    return (
+      <main className="container py-5">
+        <Skeleton variant="error" title="Failed to load product" message={error} />
+      </main>
+    )
+  }
+
+  if (loading) {
+    return (
+      <main className="container py-5">
+        <Skeleton variant="detail" />
+      </main>
+    )
+  }
 
   if (!product) {
     return (
@@ -76,8 +94,8 @@ export const ProductDetails = ({ addToCart, removeFromCart, cartItems }) => {
 
           <div className="d-flex align-items-center gap-3 mb-3">
             <div className="pd-rating d-flex align-items-center gap-2">
-              <div className="text-warning">★★★★★</div>
-              <div className="small text-muted">4.8 • 1.2k reviews</div>
+              <div className="text-warning">{'★'.repeat(Math.round(product.rating))}{'☆'.repeat(5 - Math.round(product.rating))}</div>
+              <div className="small text-muted">{product.rating.toFixed(1)}</div>
             </div>
             <div className="small text-muted">|</div>
             <div className="small text-muted">Ships in 1-2 days</div>
@@ -97,7 +115,7 @@ export const ProductDetails = ({ addToCart, removeFromCart, cartItems }) => {
           </div>
 
           <div className="d-flex gap-3 mb-3 flex-column flex-sm-row">
-            { cartItems.some((item) => item.id === product.id) ? 
+            { cartItems.some((item) => item.product.id === product.id) ? 
               <button className="btn btn-primary btn-sm px-4 py-2" onClick={() => removeFromCart(product.id)}>Remove from cart</button>
             :
               <button className="btn btn-primary btn-sm px-4 py-2" onClick={() => addToCart(product)}>Add to cart</button>}

@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom"
-export const ProductCard = ({ product, addToCart, cartItems, removeFromCart }) => {
+import { useCart } from "../context/CartContext"
+export const ProductCard = ({ product }) => {
+    const { cartItems, addToCart, removeFromCart } = useCart()
     return (
       <article className="card product-card h-100 border-0 animate-fade-in-up">
         <div className="card-img-top overflow-hidden position-relative" style={{height: 220}}>
@@ -17,7 +19,7 @@ export const ProductCard = ({ product, addToCart, cartItems, removeFromCart }) =
             </div>
 
             <div className="cta-group">
-              { cartItems && cartItems.some((item) => item.id === product.id) ? 
+              { cartItems && cartItems.some((item) => item.product.id === product.id) ? 
                 <button className="btn btn-outline-primary btn-sm" onClick={() => removeFromCart(product.id)}>Remove</button>
               : 
                 <button className="btn btn-primary btn-sm" onClick={() => addToCart(product)}>Add to cart</button>}
